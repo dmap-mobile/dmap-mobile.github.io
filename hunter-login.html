@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>DMAP - Hunter Login</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="app-container center-flex">
+        <div class="glass-card" style="width: 100%; max-width: 400px; text-align: left;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <h2>Hunter Identity</h2>
+                <p>Please confirm your details</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="hunterInitial">First letter of first name:</label>
+                <select id="hunterInitial">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="hunterNumber">Two-digit Hunter ID:</label>
+                <select id="hunterNumber">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            
+            <p id="hunterMessage" style="color: var(--error); font-size: 0.9rem; margin-bottom: 16px;"></p>
+            
+            <button id="submitID" class="btn btn-primary">Enter Dashboard</button>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-auth-compat.js"></script>
+    
+    <script src="../js/firebase-init.js"></script>
+    <script src="../js/hunter-login.js"></script>
+</body>
+</html>

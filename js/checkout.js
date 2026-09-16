@@ -3,6 +3,8 @@ const buttonsInput = document.getElementById("buttons");
 const doesInput = document.getElementById("does");
 const checkoutStatus = document.getElementById("checkoutStatus");
 const submitButton = document.getElementById("submit");
+let reservationCheckComplete = false;
+let hasReservationToday = false;
 
 function setCheckoutStatus(message, isError = true) {
     if (!checkoutStatus) return;
@@ -64,6 +66,11 @@ function clearSessionAndLogout() {
 
 async function addData() {
     if (!submitButton) return;
+
+    if (!reservationCheckComplete || !hasReservationToday) {
+        setCheckoutStatus("Reserve a hunting spot before recording a catch or clocking out.");
+        return;
+    }
 
     const hunterId = sessionStorage.getItem("hunterID");
     if (!hunterId || !/^\d+$/.test(hunterId) || hunterId === "0") {
@@ -135,10 +142,37 @@ setupCounter("buttons", buttonsInput);
 setupCounter("does", doesInput);
 submitButton.addEventListener("click", addData);
 
+async function checkReservationEligibility() {
+    try {
+        hasReservationToday = await hunterHasReservationToday();
+        reservationCheckComplete = true;
+
+        if (!hasReservationToday) {
+            setCheckoutStatus("Reserve a hunting spot before logging deer or clocking out.");
+            submitButton.textContent = "Reserve a spot first";
+            submitButton.disabled = true;
+            return;
+        }
+
+        setCheckoutStatus("Your reservation is confirmed. Record your catch below.", false);
+        submitButton.textContent = "Submit catch & clock out";
+        submitButton.disabled = false;
+    } catch (error) {
+        console.error("Could not verify today’s reservation:", error);
+        setCheckoutStatus("The system could not verify your reservation. Return to Reserve and try again.");
+        submitButton.textContent = "Reservation check failed";
+        submitButton.disabled = true;
+    }
+}
+
 const logoutButton = document.getElementById("logout");
 const logoutDialog = document.getElementById("logoutDialog");
 logoutButton.addEventListener("click", (event) => {
     event.preventDefault();
+    if (!reservationCheckComplete || !hasReservationToday) {
+        setCheckoutStatus("Reserve a hunting spot before logging out for the day.");
+        return;
+    }
     openDialog(logoutDialog);
 });
 
@@ -146,3 +180,5 @@ document.getElementById("confirmLogout").addEventListener("click", clearSessionA
 document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => closeDialog(document.getElementById(button.dataset.closeDialog)));
 });
+
+checkReservationEligibility();

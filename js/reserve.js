@@ -565,9 +565,18 @@ document.querySelectorAll("[data-close-dialog]").forEach((button) => {
 
 const logoutButton = document.getElementById("logout");
 const logoutDialog = document.getElementById("logoutDialog");
+const noReservationDialog = document.getElementById("noReservationDialog");
 if (logoutButton) {
     logoutButton.addEventListener("click", (event) => {
         event.preventDefault();
+        if (!availabilityLoaded) {
+            setMapStatus("Wait for the map to finish loading before logging out.", "warning");
+            return;
+        }
+        if (thisHunterSpots.length === 0) {
+            openDialog(noReservationDialog);
+            return;
+        }
         openDialog(logoutDialog);
     });
 }

@@ -69,7 +69,7 @@
             <button id="todayButton" class="btn btn-quiet" type="button">
                 Your spots (<span id="reservationCount">0</span>)
             </button>
-            <button id="statsButton" class="btn btn-quiet" type="button">Today’s information</button>
+            <button id="statsButton" class="btn btn-quiet" type="button">Today’s info</button>
             <button id="helpButton" class="btn btn-quiet" type="button">Help</button>
         </div>
     </main>
@@ -151,6 +151,17 @@
             <div class="dialog-actions">
                 <button id="confirmLogout" class="btn btn-danger" type="button">Log out</button>
                 <button class="btn btn-secondary" type="button" data-close-dialog="logoutDialog">Go back</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="noReservationDialog" class="app-dialog" aria-labelledby="noReservationDialogTitle">
+        <div class="dialog-content">
+            <button class="dialog-close" type="button" data-close-dialog="noReservationDialog" aria-label="Close reservation reminder">×</button>
+            <h2 id="noReservationDialogTitle">Reserve a spot first</h2>
+            <p>You cannot log out for the day until you reserve at least one hunting spot.</p>
+            <div class="dialog-actions single">
+                <button class="btn btn-primary" type="button" data-close-dialog="noReservationDialog">Return to the map</button>
             </div>
         </div>
     </dialog>

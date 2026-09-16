@@ -145,6 +145,15 @@ async function getHunterNotice() {
     };
 }
 
+async function hunterHasReservationToday(date = getLocalDateKey()) {
+    const thisDate = typeof date === "string" ? date : getLocalDateKey(date);
+    const snapshot = await hunterDocument()
+        .collection("dates")
+        .doc(thisDate)
+        .get();
+    return asCellArray(snapshot).length > 0;
+}
+
 async function reserveHunterCell(spot, date = new Date()) {
     if (!Number.isInteger(spot) || spot < 0) {
         throw new Error("No valid cell was selected.");

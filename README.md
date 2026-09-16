@@ -13,6 +13,8 @@ This is the hunter-only mobile application for the Duke Forest DMAP reservation 
 - Mobile-safe map sizing, zoom controls, and touch scrolling when zoomed.
 - Deer logging and atomic Firebase clock-out updates.
 - Dedicated clock-out confirmation page.
+- Logout and checkout are blocked until today’s reservation is verified.
+- Small-phone typography and controls are kept on one line where the label must remain immediately understandable.
 
 The researcher reservation interface is intentionally not included. The hunter application still reads the existing researcher reservation and message documents from Firestore.
 

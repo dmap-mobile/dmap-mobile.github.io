@@ -2,166 +2,163 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#173f35">
-    <title>DMAP - Reserve Spot</title>
+    <title>DMAP — Reserve a Spot</title>
     <link rel="stylesheet" href="../css/styles.css">
     <script src="../js/auth-guard.js"></script>
-    <style>
-        .map-viewport {
-            width: 100%;
-            height: calc(100vh - 220px);
-            overflow: hidden;
-            position: relative;
-            background: #fff;
-            border-radius: var(--radius-md);
-            touch-action: none;
-        }
-        .zoom-controls {
-            position: absolute;
-            right: 16px;
-            bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 10;
-        }
-        .zoom-controls button {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: none;
-            background: var(--surface-solid);
-            box-shadow: var(--shadow-sm);
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .action-panel {
-            margin-top: 16px;
-            background: var(--surface-solid);
-            padding: 16px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-        }
-        .division-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        .division-tab {
-            flex: 1;
-            padding: 10px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            background: var(--background);
-        }
-        .division-tab.is-active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-        .dialog { display: none; }
-        .dialog[open] { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; padding: 24px; }
-        .dialog-content { background: var(--surface-solid); padding: 24px; border-radius: var(--radius-lg); margin-top: 20vh; max-height: 60vh; overflow-y: auto; }
-    </style>
 </head>
 <body>
-    <div class="app-container" style="padding-bottom: 90px; gap: 8px;">
-        <header style="display: flex; justify-content: space-between; align-items: center;">
+    <main class="app-container reserve-container">
+        <header class="page-header">
             <div>
-                <h1 id="pageTitle" style="font-size: 1.25rem;">Reserve a Spot</h1>
-                <p id="mapTitle" style="font-size: 0.9rem;">Korstian Division</p>
+                <h1>Reserve a Spot</h1>
+                <p id="mapTitle">Korstian Division</p>
             </div>
-            <button id="todayButton" class="btn btn-secondary" style="padding: 8px 16px; width: auto; font-size: 0.9rem;">
-                <span id="reservationCount">0</span> Spots
-            </button>
+            <div class="identity-label" aria-label="Signed-in hunter">
+                <span id="hunterLabel">Hunter</span>
+            </div>
         </header>
 
-        <div class="division-tabs">
-            <button type="button" class="division-tab is-active" data-map="0">Korstian</button>
-            <button type="button" class="division-tab" data-map="1">Durham</button>
-        </div>
-        
-        <p id="mapStatus" style="font-size: 0.8rem; text-align: center; margin-bottom: 8px;">Loading today’s availability…</p>
+        <section id="researchNotice" class="notice-card" hidden aria-labelledby="noticeHeading">
+            <div>
+                <h2 id="noticeHeading">Message from Duke Forest</h2>
+                <p id="researchNoticePreview" class="notice-preview"></p>
+            </div>
+            <button id="noticeButton" class="btn btn-secondary small-button" type="button">Read</button>
+        </section>
 
-        <div id="mapViewport" class="map-viewport">
-            <canvas id="mapCanvas"></canvas>
-            <div class="zoom-controls">
-                <button type="button" id="zoomIn">+</button>
-                <button type="button" id="zoomOut">−</button>
+        <section class="map-toolbar" aria-label="Map controls">
+            <div class="division-tabs" role="group" aria-label="Choose a division">
+                <button type="button" class="division-tab is-active" data-map="0" aria-pressed="true">Korstian</button>
+                <button type="button" class="division-tab" data-map="1" aria-pressed="false">Durham</button>
+            </div>
+            <div class="status-row">
+                <p id="mapStatus" class="map-status" role="status" aria-live="polite">Loading today’s availability…</p>
+                <button id="refreshMap" class="btn btn-secondary small-button" type="button">Refresh</button>
+            </div>
+            <p id="lastUpdated" class="last-updated" aria-live="polite">Not refreshed yet</p>
+        </section>
+
+        <div id="mapViewport" class="map-viewport" aria-label="Reservation map">
+            <canvas id="mapCanvas" tabindex="0" aria-label="Tap an available map square to select it"></canvas>
+            <div class="zoom-controls" aria-label="Map zoom controls">
+                <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+                <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
             </div>
         </div>
 
-        <div class="action-panel">
-            <h3 id="selectionTitle">No spot selected</h3>
-            <p id="selectionDetail" style="margin-bottom: 16px; font-size: 0.9rem;">Tap an available square on the map.</p>
-            <div style="display: flex; gap: 8px;">
-                <button id="reserveCell" class="btn btn-primary" disabled>Reserve</button>
-                <button id="cancelCell" class="btn btn-secondary" disabled>Clear</button>
-            </div>
-            <p id="reserveStatus" style="font-size: 0.8rem; margin-top: 8px; color: var(--primary);"></p>
+        <div class="map-legend" aria-label="Map legend">
+            <div class="legend-item"><span class="legend-swatch available"></span><span>Available</span></div>
+            <div class="legend-item"><span class="legend-swatch yours"></span><span>Your spot</span></div>
+            <div class="legend-item"><span class="legend-swatch hunter"></span><span>Other hunter</span></div>
+            <div class="legend-item"><span class="legend-swatch research"></span><span>Research</span></div>
         </div>
-    </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="reserve.html" class="nav-item active">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"/></svg>
+        <section class="action-panel" aria-labelledby="selectionTitle">
+            <h2 id="selectionTitle">No spot selected</h2>
+            <p id="selectionDetail" class="selection-detail">Tap an available square on the map.</p>
+            <div class="selection-actions">
+                <button id="reserveCell" class="btn btn-primary" type="button" disabled>Select a spot first</button>
+                <button id="cancelCell" class="btn btn-secondary" type="button" disabled>Clear</button>
+            </div>
+            <p id="reserveStatus" class="action-status" role="status" aria-live="polite"></p>
+        </section>
+
+        <div class="quick-actions" aria-label="More information">
+            <button id="todayButton" class="btn btn-quiet" type="button">
+                Your spots (<span id="reservationCount">0</span>)
+            </button>
+            <button id="statsButton" class="btn btn-quiet" type="button">Today’s information</button>
+            <button id="helpButton" class="btn btn-quiet" type="button">Help</button>
+        </div>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Hunter navigation">
+        <a href="reserve.html" class="nav-item active" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"/></svg>
             <span>Reserve</span>
         </a>
         <a href="checkout.html" class="nav-item">
-            <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             <span>Log Deer</span>
         </a>
         <a href="#" id="logout" class="nav-item">
-            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             <span>Logout</span>
         </a>
     </nav>
 
-    <!-- Dialogs -->
-    <div id="todayDialog" class="dialog">
+    <dialog id="infoDialog" class="app-dialog" aria-labelledby="infoDialogTitle">
         <div class="dialog-content">
-            <h2>Your spots today <span id="dialogReservationCount"></span></h2>
-            <p id="todayReservations" style="margin: 16px 0;">No spots reserved yet.</p>
-            <h3>Season totals</h3>
-            <div style="display: flex; justify-content: space-between; margin: 16px 0;">
-                <div><strong id="deerCount">0</strong> deer</div>
-                <div><strong id="hoursCount">0</strong> hours</div>
+            <button class="dialog-close" type="button" data-close-dialog="infoDialog" aria-label="Close information">×</button>
+            <h2 id="infoDialogTitle">Today’s information</h2>
+            <p>Your reserved spots are listed first. Statistics are read-only.</p>
+
+            <h3 class="dialog-section-heading">Your spots today (<span id="dialogReservationCount">0</span>)</h3>
+            <ul id="todayReservations" class="reservation-list"></ul>
+
+            <div class="stats-grid" aria-label="Hunter statistics">
+                <div class="stat-card"><strong id="dailyHunters">0</strong><span>hunters with spots today</span></div>
+                <div class="stat-card"><strong id="dailySpots">0</strong><span>spots reserved today</span></div>
+                <div class="stat-card"><strong id="seasonHunters">0</strong><span>registered hunters</span></div>
+                <div class="stat-card"><strong id="seasonDeer">0</strong><span>deer this season</span></div>
+                <div class="stat-card"><strong id="seasonHours">0</strong><span>hours this season</span></div>
+                <div class="stat-card"><strong id="deerCount">0</strong><span>your deer this season</span></div>
             </div>
-            <button class="btn btn-primary" onclick="document.getElementById('todayDialog').removeAttribute('open')">Close</button>
+            <p id="hoursCount" hidden>0</p>
+            <p id="statsStatus" class="inline-status" role="status" aria-live="polite">Statistics will appear after the first refresh.</p>
+            <div class="dialog-actions single">
+                <button class="btn btn-primary" type="button" data-close-dialog="infoDialog">Close</button>
+            </div>
         </div>
-    </div>
-    
-    <div id="logoutDialog" class="dialog">
+    </dialog>
+
+    <dialog id="noticeDialog" class="app-dialog" aria-labelledby="noticeDialogTitle">
         <div class="dialog-content">
-            <h2>Finish this session?</h2>
-            <p style="margin: 16px 0;">Your completed reservations will stay saved after you log out.</p>
-            <div style="display: flex; gap: 8px;">
-                <button id="confirmLogout" class="btn btn-primary">Yes, log out</button>
-                <button class="btn btn-secondary" onclick="document.getElementById('logoutDialog').removeAttribute('open')">Go back</button>
+            <button class="dialog-close" type="button" data-close-dialog="noticeDialog" aria-label="Close message">×</button>
+            <h2 id="noticeDialogTitle">Message from Duke Forest</h2>
+            <p id="researchNoticeText" class="notice-full"></p>
+            <p id="researchNoticeUpdated" class="last-updated"></p>
+            <div class="dialog-actions single">
+                <button class="btn btn-primary" type="button" data-close-dialog="noticeDialog">Close</button>
             </div>
         </div>
-    </div>
+    </dialog>
+
+    <dialog id="helpDialog" class="app-dialog" aria-labelledby="helpDialogTitle">
+        <div class="dialog-content">
+            <button class="dialog-close" type="button" data-close-dialog="helpDialog" aria-label="Close help">×</button>
+            <h2 id="helpDialogTitle">How to reserve a spot</h2>
+            <ol class="help-list">
+                <li>Choose the division you want to hunt in.</li>
+                <li>Tap an uncolored square on the map.</li>
+                <li>Review the row and column below the map.</li>
+                <li>Tap “Reserve this spot.”</li>
+                <li>Use “Log Deer” when you are finished hunting.</li>
+            </ol>
+            <div class="dialog-actions single">
+                <button class="btn btn-primary" type="button" data-close-dialog="helpDialog">Close</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="logoutDialog" class="app-dialog" aria-labelledby="logoutDialogTitle">
+        <div class="dialog-content">
+            <button class="dialog-close" type="button" data-close-dialog="logoutDialog" aria-label="Close logout dialog">×</button>
+            <h2 id="logoutDialogTitle">Log out without clocking out?</h2>
+            <p>Your reservations will remain saved, but any deer you harvested today will not be recorded until you use “Log Deer.”</p>
+            <div class="dialog-actions">
+                <button id="confirmLogout" class="btn btn-danger" type="button">Log out</button>
+                <button class="btn btn-secondary" type="button" data-close-dialog="logoutDialog">Go back</button>
+            </div>
+        </div>
+    </dialog>
 
     <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-auth-compat.js"></script>
-    
     <script src="../js/firebase-init.js"></script>
     <script src="../reservationData.js"></script>
     <script src="../js/reserve.js"></script>
-    <script>
-        // Custom logic for polyfilling dialogs or other minor glue code
-        document.getElementById("todayButton").addEventListener("click", () => {
-            document.getElementById("todayDialog").setAttribute("open", "");
-        });
-        document.getElementById("logout").addEventListener("click", (e) => {
-            e.preventDefault();
-            document.getElementById("logoutDialog").setAttribute("open", "");
-        });
-    </script>
 </body>
 </html>

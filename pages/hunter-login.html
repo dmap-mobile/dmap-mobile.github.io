@@ -15,18 +15,18 @@
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
                 <h2>Hunter Identity</h2>
-                <p>Please confirm your details</p>
+                <p>Select your first initial and hunter number.</p>
             </div>
             
             <div class="form-group">
-                <label for="hunterInitial">First letter of first name:</label>
+                <label for="hunterInitial">First initial</label>
                 <select id="hunterInitial">
                     <!-- Populated by JS -->
                 </select>
             </div>
             
             <div class="form-group">
-                <label for="hunterNumber">Two-digit Hunter ID:</label>
+                <label for="hunterNumber">Hunter number</label>
                 <select id="hunterNumber">
                     <!-- Populated by JS -->
                 </select>
@@ -34,14 +34,12 @@
             
             <p id="hunterMessage" style="color: var(--error); font-size: 0.9rem; margin-bottom: 16px;"></p>
             
-            <button id="submitID" class="btn btn-primary">Enter Dashboard</button>
+            <button id="submitID" class="btn btn-primary" type="button">Enter reservation map</button>
         </div>
     </div>
     
     <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-auth-compat.js"></script>
-    
     <script src="../js/firebase-init.js"></script>
     <script src="../js/hunter-login.js"></script>
 </body>

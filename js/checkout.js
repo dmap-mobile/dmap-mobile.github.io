@@ -1,93 +1,148 @@
-const bucksInput = document.querySelector("#bucks");
-const buttonsInput = document.querySelector("#buttons");
-const doesInput = document.querySelector("#does");
+const bucksInput = document.getElementById("bucks");
+const buttonsInput = document.getElementById("buttons");
+const doesInput = document.getElementById("does");
+const checkoutStatus = document.getElementById("checkoutStatus");
+const submitButton = document.getElementById("submit");
 
-const setupCounter = (idPrefix, inputEl) => {
+function setCheckoutStatus(message, isError = true) {
+    if (!checkoutStatus) return;
+    checkoutStatus.textContent = message;
+    checkoutStatus.style.color = isError ? "var(--error)" : "var(--success)";
+}
+
+function setupCounter(idPrefix, inputElement) {
     const minus = document.getElementById(idPrefix + "Minus");
     const plus = document.getElementById(idPrefix + "Plus");
-    const valDisplay = document.getElementById(idPrefix + "Val");
-    
+    const display = document.getElementById(idPrefix + "Val");
+    const maximum = 10;
+
+    const render = (value) => {
+        inputElement.value = String(value);
+        display.textContent = String(value);
+    };
+
     minus.addEventListener("click", () => {
-        let val = parseInt(inputEl.value) || 0;
-        if (val > 0) {
-            val--;
-            inputEl.value = val;
-            valDisplay.textContent = val;
-        }
+        const value = Math.max(0, Number(inputElement.value) - 1);
+        render(value);
     });
-    
+
     plus.addEventListener("click", () => {
-        let val = parseInt(inputEl.value) || 0;
-        if (val < 10) { // arbitrary max
-            val++;
-            inputEl.value = val;
-            valDisplay.textContent = val;
-        }
+        const value = Math.min(maximum, Number(inputElement.value) + 1);
+        render(value);
     });
-};
+}
+
+function numberValue(input) {
+    const value = Number(input?.value);
+    return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function roundHours(value) {
+    return Math.round(Math.max(0, value) * 10) / 10;
+}
+
+function openDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") {
+        if (!dialog.open) dialog.showModal();
+    } else {
+        dialog.setAttribute("open", "");
+    }
+}
+
+function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
+    else dialog.removeAttribute("open");
+}
+
+function clearSessionAndLogout() {
+    sessionStorage.removeItem("hunterID");
+    sessionStorage.removeItem("hunterId");
+    window.location.replace("../index.html");
+}
+
+async function addData() {
+    if (!submitButton) return;
+
+    const hunterId = sessionStorage.getItem("hunterID");
+    if (!hunterId || !/^\d+$/.test(hunterId) || hunterId === "0") {
+        window.location.replace("hunter-login.html");
+        return;
+    }
+
+    const catchCounts = {
+        buck: numberValue(bucksInput),
+        button: numberValue(buttonsInput),
+        doe: numberValue(doesInput)
+    };
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Saving…";
+    setCheckoutStatus("Saving your catch and calculating hunting time…", false);
+
+    const dateKey = getLocalDateKey();
+    const hunterRef = hunterDocument(hunterId);
+    const dateRef = hunterRef.collection("dates").doc(dateKey);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const hunterSnapshot = await transaction.get(hunterRef);
+            const dateSnapshot = await transaction.get(dateRef);
+            const hunterData = hunterSnapshot.data() || {};
+            const dateData = dateSnapshot.data() || {};
+
+            const previousDailyHours = asNumber(dateData.hours);
+            const startTime = asNumber(dateData.start);
+            const elapsedHours = startTime
+                ? roundHours((Date.now() - startTime) / (1000 * 60 * 60))
+                : previousDailyHours;
+            const dailyHours = Math.max(previousDailyHours, elapsedHours);
+            const previousSeasonHours = asNumber(hunterData.hours);
+            const nextSeasonHours = roundHours(previousSeasonHours - previousDailyHours + dailyHours);
+
+            transaction.set(dateRef, {
+                buck: asNumber(dateData.buck) + catchCounts.buck,
+                button: asNumber(dateData.button) + catchCounts.button,
+                doe: asNumber(dateData.doe) + catchCounts.doe,
+                hours: dailyHours,
+                clockedOutAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            transaction.set(hunterRef, {
+                buck: asNumber(hunterData.buck) + catchCounts.buck,
+                button: asNumber(hunterData.button) + catchCounts.button,
+                doe: asNumber(hunterData.doe) + catchCounts.doe,
+                hours: nextSeasonHours,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        });
+
+        sessionStorage.setItem("clockoutHunterID", hunterId);
+        sessionStorage.removeItem("hunterID");
+        sessionStorage.removeItem("hunterId");
+        window.location.replace("clockout.html");
+    } catch (error) {
+        console.error("Could not save today’s catch:", error);
+        setCheckoutStatus("Your catch was not saved. Check the connection and try again.");
+        submitButton.textContent = "Submit catch & clock out";
+        submitButton.disabled = false;
+    }
+}
 
 setupCounter("bucks", bucksInput);
 setupCounter("buttons", buttonsInput);
 setupCounter("does", doesInput);
+submitButton.addEventListener("click", addData);
 
-async function addData(){
-    const submitBtn = document.getElementById("submit");
-    submitBtn.textContent = "Submitting...";
-    submitBtn.disabled = true;
+const logoutButton = document.getElementById("logout");
+const logoutDialog = document.getElementById("logoutDialog");
+logoutButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    openDialog(logoutDialog);
+});
 
-    const formatter = new Intl.DateTimeFormat("fr-CA", {
-        timeZone: "America/New_York",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
-    });
-    const thisDate = formatter.format(new Date());
-
-    const hunterRef = db.collection("reserved").doc("hunters").collection("hunterID").doc("h" + sessionStorage.getItem("hunterID"));
-    var snap = await hunterRef.get();
-    var pBuck = parseInt(snap.data()?.buck) || 0;
-    var pButton = parseInt(snap.data()?.button) || 0;
-    var pDoe = parseInt(snap.data()?.doe) || 0;
-    var pHours = parseInt(snap.data()?.hours) || 0;
-
-    const dataRef = hunterRef.collection("dates").doc(thisDate);
-    var snap2 = await dataRef.get();
-    var tBuck = parseInt(snap2.data()?.buck) || 0;
-    var tButton = parseInt(snap2.data()?.button) || 0;
-    var tDoe = parseInt(snap2.data()?.doe) || 0;
-    var tStart = parseInt(snap2.data()?.start) || 0;
-    var tHours = (parseInt(snap2.data()?.hours) || 0) / 1000 / 60 / 60;
-
-    var nums = [parseInt(bucksInput.value), parseInt(buttonsInput.value), parseInt(doesInput.value), (Date.now() - tStart) / 1000 / 60 / 60];
-
-    try{
-        await dataRef.update({
-            buck: tBuck + nums[0],
-            button: tButton + nums[1],
-            doe: tDoe + nums[2],
-            hours: nums[3]
-        });
-        
-        await hunterRef.update({
-            buck: pBuck + nums[0],
-            button: pButton + nums[1],
-            doe: pDoe + nums[2],
-            hours: pHours - tHours + nums[3]
-        });
-
-        // Clear session and go to root to redirect to login
-        sessionStorage.removeItem("hunterID");
-        alert("Success! You are now logged out.");
-        window.location.href = '../index.html';
-        
-    } catch (e) {
-        console.error(e);
-        alert("Error saving data. Please try again.");
-        submitBtn.textContent = "Submit & Clock Out";
-        submitBtn.disabled = false;
-    }
-}
-
-document.getElementById("submit").onclick = function() {
-    addData();
-};
+document.getElementById("confirmLogout").addEventListener("click", clearSessionAndLogout);
+document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+    button.addEventListener("click", () => closeDialog(document.getElementById(button.dataset.closeDialog)));
+});

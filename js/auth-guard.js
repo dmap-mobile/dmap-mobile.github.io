@@ -1,7 +1,6 @@
 // Auth Guard for Hunter routes
-(function() {
+(function () {
     const hunterID = sessionStorage.getItem("hunterID");
-    if (!hunterID || hunterID === "0") {
-        window.location.replace("hunter-login.html");
-    }
+    const validSession = Boolean(hunterID && /^\d+$/.test(hunterID) && hunterID !== "0");
+    if (!validSession) window.location.replace("hunter-login.html");
 })();
